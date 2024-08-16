@@ -4,6 +4,29 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    // here we're accessing the refreshToken from the model of this user object
+    // user obejct is saved in database without the refresh token
+    // but in our user schema we have a property refreshToken
+    // we're accessing that
+    user.refreshToken = refreshToken;
+    // now we're saving that without validating the other required properties
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating refresh and access token"
+    );
+  }
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   // destructuring data from request body
   const { fullName, email, username, password } = req.body;
