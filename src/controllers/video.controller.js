@@ -109,4 +109,50 @@ const getVideoById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video fetched successfully!"));
 });
 
-export { getAllVideos, publishVideo, getVideoById };
+const updateVideoDetails = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  const { title, description } = req.body;
+
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid video id!");
+  }
+
+  const thumbnailLocalPath = req.file?.path;
+
+  if (!title && !description && !thumbnailLocalPath) {
+    throw new ApiError(400, "Atleast one field is required");
+  }
+
+  let thumbnail;
+  if (thumbnailLocalPath) {
+    thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+
+    if (!thumbnail.secure_url) {
+      throw new ApiError(400, "Error while updating thumbnail to cloudinary");
+    }
+  }
+
+  const response = await Video.findByIdAndUpdate(
+    videoId,
+    {
+      $set: {
+        title,
+        description,
+        thumbnail: thumbnail.secure_url,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  if (!response) {
+    throw new ApiError(400, "Video details not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, response, "Video details updated successfully"));
+});
+
+export { getAllVideos, publishVideo, getVideoById, updateVideoDetails };
