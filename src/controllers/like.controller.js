@@ -99,4 +99,30 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
     );
 });
 
-export { toggleVideoLike, toggleCommentLike };
+const toggleTweetLike = asyncHandler(async (req, res) => {
+  const { tweetId } = req.params;
+
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(400, "Invalid tweet id");
+  }
+
+  const { tweetLiked, isLiked, totalLikes } = await toggleLike(
+    Tweet,
+    tweetId,
+    req.user?._id
+  );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { totalLikes },
+        !isLiked
+          ? "Tweet liked Successfully"
+          : "Like from tweet removed successfully"
+      )
+    );
+});
+
+export { toggleVideoLike, toggleCommentLike, toggleTweetLike };
