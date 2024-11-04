@@ -3,6 +3,9 @@ import { Like } from "../models/like.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Video } from "../models/video.model.js";
+import { Comment } from "../models/comment.model.js";
+import { Tweet } from "../models/tweet.model.js";
 
 const toggleLike = async (Model, resourceId, userId) => {
   if (!isValidObjectId(resourceId) || !isValidObjectId(userId)) {
@@ -19,12 +22,12 @@ const toggleLike = async (Model, resourceId, userId) => {
   let toggledLike;
   try {
     if (!isLiked) {
-      toggleLike = await Like.create({
+      toggledLike = await Like.create({
         [model.toLowerCase()]: resourceId,
         likedBy: userId,
       });
     } else {
-      toggleLike = await Like.deleteOne({
+      toggledLike = await Like.deleteOne({
         [model.toLowerCase()]: resourceId,
         likedBy: userId,
       });
@@ -63,9 +66,37 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         { totalLikes },
-        !isLiked ? "Liked Successfully" : "Like removed successfully"
+        !isLiked
+          ? "Video liked Successfully"
+          : "Like from video removed successfully"
       )
     );
 });
 
-export { toggleVideoLike };
+const toggleCommentLike = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+
+  if (!isValidObjectId(commentId)) {
+    throw new ApiError(400, "Invalid commentId");
+  }
+
+  const { commetLiked, isLiked, totalLikes } = await toggleLike(
+    Comment,
+    commentId,
+    req.user?._id
+  );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { totalLikes },
+        !isLiked
+          ? "Comment liked Successfully"
+          : "Like from comment removed successfully"
+      )
+    );
+});
+
+export { toggleVideoLike, toggleCommentLike };
