@@ -125,4 +125,80 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     );
 });
 
-export { toggleVideoLike, toggleCommentLike, toggleTweetLike };
+const getLikedVideos = asyncHandler(async (req, res) => {
+  const userId = req.user?._id;
+
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid uiserId");
+  }
+
+  const likedVideos = await Like.aggregate([
+    {
+      $match: {
+        $and: [
+          {
+            likedBy: new mongoose.Types.ObjectId(`${userId}`),
+          },
+          {
+            video: {
+              $exists: true,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "video",
+        foreignField: "_id",
+        as: "video",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullname: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        details: {
+          $first: "$video",
+        },
+      },
+    },
+  ]);
+
+  if (!likedVideos) {
+    throw new ApiError(500, "Error fetching likedVideos");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, likedVideos, "Successfully fetched liked videos!")
+    );
+});
+
+export { toggleVideoLike, toggleCommentLike, toggleTweetLike, getLikedVideos };
