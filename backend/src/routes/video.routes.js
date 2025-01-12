@@ -11,9 +11,6 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
-// we have to verify jwt for all the routes in this file
-// so, we will use a middleware
-router.use(verifyJWT);
 
 router
   .route("/")
@@ -31,6 +28,10 @@ router
     ]),
     publishVideo
   );
+
+// we have to verify jwt for all the routes in this file
+// so, we will use a middleware
+router.use(verifyJWT);
 
 router
   .route("/:videoId")
